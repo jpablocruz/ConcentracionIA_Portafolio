@@ -1,0 +1,218 @@
+---
+title: "Momento de Retroalimentación"
+author: "Jose Pablo Cruz Ramos"
+date: "2022-10-25"
+output: pdf_document
+---
+## Estudiante: "José Pablo Cruz Ramos"
+## Matricula: A01138740
+## Modulo 1: Estadística para ciencia de datos y nombre de la concentración.
+## Grupo: 502
+
+## Resumen
+
+### A) Problematica 
+
+La contaminación por mercurio de peces en el agua dulce comestibles es una amenaza directa contra nuestra salud. Se llevó a cabo un estudio reciente en 53 lagos de Florida con el fin de examinar los factores que influían en el nivel de contaminación por mercurio. \
+
+El objetivo esta en que con base en los datos presentados se debe investigar cuales de estos factores son aquellos que impactan de mayor manera al nivel de contaminacion por mercurio en los lagos.\
+
+```{r, echo= FALSE}
+D <- read.csv("mercurio.csv")
+
+#Renombramos las columnas
+colnames(D) <- c("ID", "lago", "alcalinidad_agua_mgl", "pH", "calcio_mgl",
+"clorofila_mgl", "mercurio_promedio", "num_peces","min_mercurio", "max_mercurio", "mercurio_estim_3ys", "edad_peces")
+
+#Eliminamos las columnas del lago,ID, entre aquellas que encontramos no ser relevantes para tener unicamente los valores utiles.
+Dsubset = subset(D, select = -c(lago, ID,mercurio_estim_3ys))
+Dsubset_2 = subset(Dsubset, select = c(pH, max_mercurio))
+
+#Creamos set de datos por columna
+mercurio_promedio = Dsubset$mercurio_promedio
+alcalinidad = Dsubset$`alcalinidad_agua_mgl`
+ph = Dsubset$pH
+calcio = Dsubset$`calcio_mgl`
+clorofil = Dsubset$`clorofila_mgl`
+n_peces = Dsubset$num_peces
+edad_peces = Dsubset$edad_peces
+```
+
+### B) Abordamiento 
+
+Como parte de la manera en la que se abordo la problemática, reutilizamos el reporte pasado en el cual ya contabamos el analisis de los datos y algunas conclusiones sobre aquellos factores que afectaban mas a la contaminacion de mercurio en los lago. En esta parte daremos uso de los conceptos de **componentes principales** y **normalidad de variables**, esto con la finalidad de poder visualizar en menos dimensiones la relevancia de cada variable con la variable objetivo y obtener la meta principal la cual es cuales afectan mayormente a la contaminación de mercurio.\
+
+## Introduccion
+Los pescados conforme pasa el tiempo se contaminan por el mercurio que absorben en las aguas ya sea dulces o saladas, el mercurio de dichos peces afectan directamente a la salud de las personas que los consumen. Se presenta un set de datos el cual demuestra registros de los lagos acerca de sus caracteristicas y a la vez se presenta informacion de los peces dentro. El objetivo es encontrar los factores que influyen en la contaminacion por mercurio del lago.\
+
+Pregunta a analizar: *¿Cuáles son los principales factores que influyen en el nivel de contaminación por mercurio en los peces de los lagos de Florida?* \
+
+La importancia de la solución a esta problematica recae en el impacto que tiene el mercurio en la salud de los seres humanos justo como se menciona en la problematica planteada, el encontrar aquellos factores por los que los lagos se contaminan de mercurio puede ayudar a encontrar maneras de reducir y mitigar dicha contaminacion. De esta manera se cuidan las vidas de las personas que consuman los pescados de estos lagos.
+
+### Factores y su descripcion
+A continuacion se observan las variables presentes dentro del conjunto de datos del estudio realizado en los lagos de Florida.\ 
+
+**X1** = número de indentificación\
+**X2** = nombre del lago\
+**X3** = alcalinidad (mg/l de carbonato de calcio)\
+**X4** = PH\
+**X5** = calcio (mg/l)\
+**X6** = clorofila (mg/l)\
+**X7** = concentración media de mercurio (parte por millón) en el tejido muscualar del grupo de peces estudiados en cada lago\
+**X8** = número de peces estudiados en el lago\
+**X9** = mínimo de la concentración de mercurio en cada grupo de peces\
+**X10** = máximo de la concentración de mercurio en cada grupo de peces\
+**X11** = estimación (mediante regresión) de la concentración de mercurio en el pez de 3 años (o promedio de mercurio cuando la edad no está disponible)\
+**X12** = indicador de la edad de los peces (0: jóvenes; 1: maduros)\
+
+## Analisis de Resultados
+
+Para poder encontrar los factores que mayor impactan a la contaminación por mercurio en los lagos, haremos un analisis profundo sobre las variables, mas en especifico sobre su relevancia con la variable objetivo utilizando los conceptos de componentes principales.\ 
+
+### Analisis de normalidad 
+Información relevante acerca de las variables, la cual se obtiene con la funcion de summary y apply la cual nos brinda la desviacion estandar de cada variable: \
+
+```{r, echo= FALSE}
+summary(Dsubset)
+print("Standard Deviation")
+apply(Dsubset,2,sd)
+```
+
+### A) Realice la prueba de normalidad de Mardia y la prueba de Anderson Darling
+
+Utilizaremos estas pruebas para identificar las variables que son normales y detectar posible normalidad multivariada de grupos de variables; Para esto utilizaremos la librería de MVN la cual se encarga de realizar las pruebas y nos arroja una serie de valores sobre las variables como la normalidad de cada una, su valor p, su sesgo, curtosis etc.\
+
+```{r, echo= FALSE}
+library(MVN)
+mvn(Dsubset, subset = NULL, mvn = "mardia", covariance = FALSE,showOutliers = FALSE)
+```
+
+
+Como podemos observar con la prueba de Anderson Darling, la unica variable normal es el pH y la variable de max_mercurio. Ahora realizaremos la misma prueba pero solo para aquellas variables que si tuvieron normalidad.
+
+### B) Realice la prueba de normalidad de Mardia y la prueba de Anderson Darling con variables que mostraron normalidad
+
+```{r, echo= FALSE}
+mvn(Dsubset_2, subset = NULL, mvn = "mardia", covariance = FALSE,showOutliers = FALSE)
+```
+
+Podemos observar que al solo utilizar variables con normalidad, los resultados de las pruebas de Mardia y Anderson Darling nos arrojan resultados distintos. En este caso ambas pruebas de normalidad fueron pasadas, lo cual indica que estas variables son las que mejor distribucion normal tienen. En cuanto a la Kurtosis, en ambas variables es negativa esto indica una distribucion de sus valores relativamente planos comparada con la distribucion normal.\
+
+### C) Grafica de contorno multivariado
+Realiza la prueba de Mardia y Anderson Darling de las variables que sí tuvieron normalidad en los incisos anteriores. Interpreta los resultados obtenidos con base en ambas pruebas y en la interpretación del sesgo y la curtosis de cada una de ellas. \
+
+```{r, echo= FALSE}
+library(MASS)
+Dsubset_2.kde <- kde2d(Dsubset_2[,1], Dsubset_2[,2], n = 53,lims = c(range(2,11),range(-2,4))) 
+contour(Dsubset_2.kde, col="blue")
+```
+
+## D) Detecta datos atípicos o influyentes en la normal multivariada encontrada en el inciso B (auxíliate de la distancia de Mahalanobis y del gráfico QQplot multivariado)
+
+Daremos uso de la distancia de Mahalanobis y el grafico de QQplot multivariado para encontrar aquellos "outliers" o datos atipicos dentro de la normal multivariada que se encontro previamente.Podemos utilizar la función de mahalanobis ya hecha en R para poder obtener las distancias, para esto necesitamos la covarianza del mismo dataset, y el vector de distribucion de la media.
+
+```{r, echo = FALSE}
+mahalanobis(Dsubset_2, colMeans(Dsubset_2), cov(Dsubset_2))
+```
+```{r, echo = FALSE}
+mu <- colMeans(Dsubset_2)
+sigma <- cov(Dsubset_2)
+dist <- mahalanobis(Dsubset_2, mu, sigma)
+df <- ncol(Dsubset_2)
+n <- length(dist)
+u <- ((1:n)-0.5)/n
+p <- qchisq(u,df)
+distsorted <- sort(dist)
+plot(distsorted,p, col="red",main="QQ Plot") 
+abline(0,1, col="orange")
+```
+
+A simple vista podemos observar que los datos estan bastante concentrados del lado izquierdo, posteriormente los datos se comienzan a disparar y tener distancias mas lejandas, podríamos decir que si existen unos cuantos datos atípicos de los cuales podemos deshacernos. A continuación demostraremos los resultados de normalidad con anderson para ver si cambian los resultados al eliminar aquellos datos atipicos.\
+
+```{r, echo= FALSE}
+mvn(Dsubset_2, subset = NULL, mvn = "mardia", showOutliers = FALSE)
+```
+
+Podemos observar que bajó el valor p, igualmente, ahora pasaremos al analisis de componentes principales.
+
+## Análisis de componentes principales
+
+Es adecuado utilizar el analisis de componentes principales para identificar los factores que intervienen en el problema de la contaminación por mercurio de los peces en agua dulce, de una manera mas sencilla. Ya que este analisis simplifica el labor de las dimensiones, al reducirlas y manteniendo las tendencias y patrones, de esta manera se identifican mas facilemente aquellas variables con mayor relevancia a la contaminación de mercurio en los lagos.\
+
+```{r, echo= FALSE}
+correl = cor(Dsubset)
+vvp = eigen(correl)
+lambda = vvp$values
+var = sum(diag(correl))
+prop_varn = lambda/var
+```
+
+```{r}
+cat("La suma de la diagonal de covar y la suma de los valores es el mismo valor:",sum(vvp$values), sum(diag(correl)) )
+```
+
+```{r, echo= FALSE}
+cov = cov(Dsubset)
+vvp_2 = eigen(cov)
+lambda_2 = vvp$values
+var_2 = sum(diag(cov))
+prop_varn_2 = lambda/var
+```
+
+```{r}
+cat("La suma de la diagonal de covar y la suma de los valores es el mismo valor:",sum(vvp_2$values), sum(diag(cov)) )
+```
+
+### Comparacion entre componentes necesarios para mayor variabilidad explicada entre correlacion y covarianza
+
+```{r, echo= FALSE}
+cat("Componentes con Covar:", cumsum(prop_varn_2))
+cat("Componentes con Correlacion:", cumsum(prop_varn))
+```
+
+Como podemos observar al utilizar la covarianza en lugar de la correlacion, se necesitan de mas componentes para encontrar mayor variabilidad explicada.Esto se debe a que la matriz de correlacion es similar a realizar una estandarizacion por lo que los datos ya cobran mas sentido entre los mismos.\
+
+Por esta razón nos quedaremos con el uso de la correlación.Con los datos que se obtienen podemos observar que ya se puede observar la mayor parte de la variabilidad con 5 componentes. Se alcanza alrededor del 92% con estos cinco. Ahora pasaremos a realizar un diagrama sobre los vectores de cada factor. \
+
+```{r, echo= FALSE}
+library(stats)
+library(factoextra)
+library(ggplot2)
+
+datos=Dsubset
+
+cpR = princomp(datos,cor=TRUE)
+cpaR = as.matrix(datos)%*%cpR$loadings
+plot(cpaR[,1:2],type="p", main = "Correlación")
+text(cpaR[,1],cpaR[,2],1:nrow(cpaR))
+```
+
+```{r, echo = FALSE}
+library(FactoMineR)
+library(factoextra)
+library(ggplot2) 
+datos= Dsubset
+cp3 = PCA(datos)
+fviz_pca_ind(cp3, col.ind = "blue", addEllipses = TRUE, repel = TRUE)
+```
+
+```{r}
+fviz_screeplot(cp3)
+fviz_contrib(cp3, choice = c("var"))
+```
+
+Como podemos observar tanto del grafico de PCA y de los histogramas sobre el porcentaje de variabilidad explicada, esque es notable que hay ciertos factores que tienen mayor peso que otros, en este caso el primer componente es el que mayor variabilidad explicada nos provee, seguido de una gran disminución hacia el segundo. Sus pesos son principalmente alcalinidad, ph, clorofila y calcio. Esto embona con el analisis previo que habíamos realizado en el cual comentamos que estas variables eran las que mayor efecto tenian en la contaminación de mercurio\.
+
+Con los histogramas confirmamos que la variabilidad explicada se encuentra en un 99% aproximadamente cuando alcanza al quinto componente, otra manera de ver el analisis es que en el PCA aquellas variables mas alejadas son las que mas se pueden observar y que asi mismo mayor efecto tienen.
+
+## Conclusiones
+
+Con el uso de los componentes principales se logró profundizar los hallazgos de aquellos factores que afectaban la contaminación de los lagos a través de otro acercamiento. Finalmente lo que se logró fue reconfirmar que los factores ya antes encontrados en el reporte pasado por lo que llegamos a conclusiones con gran similitud, lo cual es que el ph, la alcalinidad y el calcio son los que mayor relación tienen con el nivel de mercurio con los lagos. Esta vez incluso agregaremos la clorofila la cual con base en los graficos tambien demostro contribución.\ 
+
+Todo esto hace sentido debido a que el nivel de alcalinidad se ve afectado por el nivel de ph en el agua, lo cual esta comprobado cientificamente. La alcalinidad esta ligada al pH de manera que si un cuerpo liquido es mas alcalino entonces tiende a tener un ph mas alto (un ph base no acido), por lo que el bajar el nivel de alcalindiad involucra un mayor nivel de pH esto simboliza que se puede aumentar la cantidad de mercurio presente como se menciono en el articulo anexado en la parte inferior, esto nos ayuda a concluir que las variable que se encontraron que afectan al mercurio en este analisis satisfacen el comportamiento real del mercurio en los lagos.\
+
+
+## ANEXO 
+LINK DEL DRIVE CON ARCHIVO R Y PDF: https://drive.google.com/drive/folders/1AJyoZmRN490iRqjAVUtIFI9pgyGktbLr?usp=sharing 
+
+Articulo mencionado *Articulo:* https://www.waterboards.ca.gov/water_issues/programs/swamp/docs/cwt/guidance/3140sp.pdf  \

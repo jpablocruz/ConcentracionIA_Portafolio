@@ -1,0 +1,217 @@
+---
+title: "Venta de Televisores"
+date: "2022-12-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Jose Pablo Cruz Ramos
+# A01138740
+# Módulo 5: Estadística Avanzada para ciencia de datos y nombre de la concentración.
+# Grupo 502
+
+## Resumen
+
+Se ha dado a conocer los datos de la venta de televisores de un periodo de 4 años, los datos incluyen divisiones por trimestres y las ventas en cada uno en cantidades de miles, El objetivo es analizar la serie de tiempo de los datos presentes y poder generar predicciones para el siguiente año que sean precisas.\
+
+La manera en la que se abordo la situación problema, fue haciendo una serie de procesos utilizando las funciones del lenguaje R y así obtener estadísticas para un analisis profundo de la venta de televisores. Los analisis que se realizaron fueron los siguientes:\
+
+- **Gráfico de dispersión**: Para osbervar las tendencias y ciclos en los datos presentes.\
+- **Análisis de tendencia y estacionalidad**: Dimos uso de la funcion decompose para obtener la decomposicion de la serie en sus 3 componentes.\
+- **Regresión lineal de la tendencia (ventas desestacionalizadas vs tiempo)**: Para poder generar un modelo que estime los datos del próximo año.\
+- **Análisis de los residuos**: Para analizar el modelo y su pertinencia con los datos de la serie de tiempo\
+- **Prueba de normalidad**: Analizar si los datos se encuentran en un estado adecuado para ser utilizados (distribuidos normalmente) o si requieren de ajustes como escalamientos u otra transformacion.\
+
+###  Principales Resultados y Conclusiones
+
+Despues de realizar el analisis y el modelo para generar las predicciones del próximo año, en encontró que existía una tendencia positiva en la venta de televisores esto lo podemos observar en los gráficos.Por otro lado despúes de realizar el modelo se pudo generar el pronóstico para el próximo año y en las conclusion se demuestra la precision del modelo.\
+
+## Introduccion
+
+En este reporte se analizan las ventas de televisores en el periodo de los últimos 4 años, El objetivo es analizar la serie de tiempo de las ventas y poder estimar las ventas para el siguiente año.\
+
+La imporancia del problema recae en que la predicción de la venta de televisores puede ser un gran indicador para que las empresas relacionadas a esta industria sepan como actuar y prepararse para el futuro, de manera en que si estan informados de que las ventas tienen una tendencia positiva estos podrían llegar a conclusiones como las de comprar mas productos para vender y viceversa en caso de que la tendencia no sea la contraria.\
+
+De esta manera las empresas pueden reducir gastos y desperdicio de productos o incluso incrementar sus ventas. Es por esto que la creación un modelo que sea capaz de generar estimaciones precisas es de suma importancia.\
+
+## Análisis de los resultados
+```{r, echo=FALSE}
+ventas = c(4.8, 4.1, 6, 6.5, 5.8, 5.2, 6.8, 7.4, 6, 5.6, 7.5, 7.8, 6.3, 5.9, 8, 8.4)
+t = 1:16
+```
+### Gráfica de Dispersión
+```{r, echo=FALSE}
+plot(t,ventas, type="o", col="red")
+```
+
+Como podemos observar de este gráfico de dispersion, podemos observar diferentes ranuras, las cuales demuestran un patron en el tiempo, cada cierto tiempo las ventas bajan y despues vuelven a subir. Sin embargo aun con las ranuras presentes podemos a simple vista observar una tendencia positiva en las ventas, lo cual indica que las ventas han aumentado con el paso del tiempo.\
+
+### Analisis de tendencia y estacionalidad
+
+Para realizar este analisis se dio uso de la función "decompose" de R para poder descomponer la serie de tiempo en 3 componentes, Estacional, Tendencia y Aleatoria, esta descomposicion nos ayudará a encontrar información mas relevante de la serie de tiempo. \
+
+```{r, echo=FALSE}
+x= ts(ventas, frequency = 4, start(c(2016,1)))
+plot.ts(x, col = "blue")
+T = decompose(x, type = c("multiplicative"))
+plot(T, col ="orange")
+```
+
+Como podemos observar, el resultado nos da tres series, la tendencia, la tendencia estacional y la tendencia aleatoria, como podemos observar en la estacional se puede observar un patron donde se observan aumentos y declives para cada año presente. Por otro lado la tendencia apunta hacia un crecimiento conforme pasa el tiempo, mientras que la aleatoria muestra una disminucion en las ranuras conforme pasaron los años.\ 
+
+Por ende podemos entender que la tendencia propia de los datos muestra una pendiente positiva, asi mismo en cuanto a la estacionalidad, podemos observar como existen altas y bajas con el paso del tiempo pero a la vez se comportan con un patron, de manera en que al inicio de cada año se muestra una baja y despues una alza en las ventas.\ 
+
+Ahora mostratemos los indices estacionales:\
+```{r, echo=FALSE}
+T$seasonal
+```
+
+Con estos indices podemos comprobar lo mencionado sobre el patron en la serie estacional, en el segundo cuartil el cual equivale a una parte inicial de los años muestra ser de menor valor que tanto la primera como las demas partes de la serie, igualmente cabe recalcar que los cuartiles mas altos son el cuarto seguido del tercero.\
+
+## Regresión lineal de la tendencia con ventas desestacionalizadas 
+
+Ahora realizaremos el modelo con los datos desestacionalizados para observar el comportamiento del modelo y ver como podemos ajustarlo para que responda correctamente a la estacionalidad al momento de generar un modelo para los pronosticos.\
+
+```{r, echo=FALSE}
+N = lm(ventas~t)
+plot(t, ventas, type= "l", col = "green")
+abline(N, col = "red")
+N
+```
+
+Obtenemos ahora los valores para B1 y B0:\
+```{r, echo=FALSE}
+ventas_desestacionalizadas = (T$x)/(T$seasonal)
+x3 = 1:16
+y3 = ventas_desestacionalizadas
+N3 = lm(y3~x3)
+N3
+summary(N3)
+```
+
+```{r}
+plot(x3, y3, type = "l")
+abline(N3, col = "red")
+```
+
+Como podemos observar en las ventas desestacionalizadas, el modelo obtiene un valor de B1 menor que el valor de T, lo cual muestra que si es significante, asi mismo vemos que el valor de R cuadrada es cercana a 1, con 91 de la variabilidad explicada lo cual indica que este es un modelo preciso, asi mismo podemos analizar los residuos para mostrar lo antes mencionado:\
+
+```{r}
+qqnorm(N3$residuals)
+qqline(N3$residuals)
+```
+
+Como podemos ver se ajusta muy bien el modelo a los puntos en la grafica por lo que el modelo esta haciendo estimaciones adecuaddas.Podemos seguir con la creacion de nuestras predicciones pero ahora usando un modelo multiplicativo.\
+
+
+```{r, echo= FALSE}
+f = function(x) {5.1080 + 0.1474*x} 
+ee = NA
+epep = NA
+predictions = NA
+c = 1
+for (val in t) {
+  real = ventas[val]
+  predict = f(val)*T$seasonal[c]
+  if (c > 4) { 
+    c=1
+  }
+  predictions[val] = predict
+  c=c+1
+  error = real - predict
+  EPAM = abs(error / real)
+  CME = error^2
+  ee[val] = CME
+  epep[val] = EPAM
+}
+cat("Error Cuadratico Medio  = ", mean(ee), "EPAM = ", mean(epep))
+```
+
+```{r, echo= FALSE}
+plot(t, ventas, type= "o", col = "brown")
+lines(t, predictions, type= "o", col = "blue")
+```
+
+Con el modelo multiplicativo podemos observar un gran ajuste a los datos por parte de las estimaciones incluso con la estacionalidad de los datos. En cuanto al CME y el EPAM en ambos casos vemos que el valor de estos es mínimo o cercano a cero lo cual demuestra que es preciso y su error no es evidente. Se considera que este modelo es el indicado para realizar las predicciones de las ventas para el próximo año.\
+
+## Comparacion entre modelo multiplicativo y aditivo
+
+Antes de realizar las predicciones primero observaremos si el modelo aditivo es conveniente de utilizar en lugar del multiplicativo, con base en sus EPAMs , CMEs y los graficos de su pertinencia con los datos analizaremos cual es el que mas conviene.\
+
+```{r, echo= FALSE}
+T2 = decompose(x, type="additive")
+ventas_desestacionalizadas_2 = (T2$x)/(T2$seasonal)
+x_2 = 1:16
+y_2 = ventas_desestacionalizadas_2
+N3_2 = lm(y_2~x_2)
+N3_2
+summary(N3_2)
+```
+
+```{r, echo= FALSE}
+plot(x_2, y_2, type = "l")
+abline(N3_2, col = "red")
+```
+
+```{r}
+qqnorm(N3_2$residuals)
+qqline(N3_2$residuals)
+```
+
+```{r, echo= FALSE}
+f = function(x) {-3.5443 + 0.4847*x} 
+ee = NA
+epep = NA
+predictions_2 = NA
+c = 1
+for (val in t) {
+  real = ventas[val]
+  predict = f(val)*T2$seasonal[c]
+  if (c > 4) { 
+    c=1
+  }
+  predictions_2[val] = predict
+  c=c+1
+  error = real - predict
+  EPAM = abs(error / real)
+  CME = error^2
+  ee[val] = CME
+  epep[val] = EPAM
+}
+cat("Error Cuadratico Medio  = ", mean(ee), "EPAM = ", mean(epep))
+```
+
+```{r}
+plot(t, predictions_2, type= "o", col = "brown")
+lines(t, ventas, type= "o", col = "blue")
+```
+
+Como podemos observar el modelo aditivo no tiene una buena pertinencia, asi mismo el CME y EPAM son bastantes altos por lo que no muestra ser preciso o tener un buen ajuste a los datos reales, finalmente el B1 es mas alto que el valor de T lo cual nos indica que no se encuentra una significancia. Como conclusino se usara el modelo multiplicativo ya que resulto ser el mas conveniente y sobrepasa al aditivo por mejor precision notable.\
+
+### Pronóstico
+
+```{r}
+f = function(x) {5.1080 + 0.1474*x}
+a1 = T$seasonal[1]
+a2 =T$seasonal[2]
+a3 = T$seasonal[3]
+a4 = T$seasonal[4];
+f(17)*a1*1000
+f(18)*a2*1000
+f(19)*a3*1000
+f(20)*a4*1000
+plot(x3, y3, type = "b")
+plot(seq(17,20), f(seq(17,20)), type = "b", col="blue")
+```
+
+## Conclusión
+
+De manera de conclusión se logró el objetivo principal el cual era generar los pronósticos del año siguiente en las ventas de televisores, no solo esto sino que se logró hacer con un modelo adecuado el cual tuviera pertinencia a los datos presentes. El modelo multiplicativo resulto ser el adecuado y el cual obtuvo bajo error en CME y EPAM, mientras que el modelo aditivo no demostro un buen rendimiento debido a su alto error y poca significancia en B1. Por otro lado el multiplicativo demostro gran variabilidad explicada casi del valor de 1 y con un valor de B1 significante. Con esto podemos asegurar que las predicciones del próximo año que se realizaron son acertadas.
+
+## Anexos
+LINK DE CARPETA DE DRIVE CON LOS DOCUMENTOS: \
+
+https://drive.google.com/drive/folders/1AJyoZmRN490iRqjAVUtIFI9pgyGktbLr?usp=sharing 
+
